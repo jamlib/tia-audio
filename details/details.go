@@ -73,7 +73,16 @@ func ProcessUrl(url string) (Details, error) {
     Location: dResp.parseLocation(),
     Tracks: dResp.parseTracks(),
   }
+  d.Album = fmt.Sprintf("%s %s, %s", d.Date, d.Venue, d.Location)
 
+  if errStr := d.validate(); errStr != "" {
+    return d, errors.New(errStr)
+  }
+  return d, nil
+}
+
+// validate Details{}
+func (d *Details) validate() string {
   var strErr string
 
   // include error if metadata incomplete
@@ -81,8 +90,6 @@ func ProcessUrl(url string) (Details, error) {
     len(d.Venue) == 0 || len(d.Location) == 0 {
     strErr = "Error in parse of metadata {Artist, Date, Venue, Location}. "
   }
-
-  d.Album = fmt.Sprintf("%s %s, %s", d.Date, d.Venue, d.Location)
 
   // include error if no tracks found
   if len(d.Tracks) == 0 {
@@ -96,10 +103,7 @@ func ProcessUrl(url string) (Details, error) {
     }
   }
 
-  if len(strErr) > 0 {
-    return d, errors.New(strErr)
-  }
-  return d, nil
+  return strErr
 }
 
 // parse 'artist' from HTML body

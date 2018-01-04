@@ -31,9 +31,8 @@ func RegexpBetween(before, after, within string) string {
   s := regexp.MustCompile(r).FindString(within)
 
   // trim before & after
-  if len(s) >= len(before)+len(after) {
-    s = s[len(before):len(s)-len(after)]
-  }
+  s = strings.TrimPrefix(s, before)
+  s = strings.TrimSuffix(s, after)
 
   return s
 }
