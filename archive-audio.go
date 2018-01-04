@@ -11,6 +11,9 @@ import (
   "path/filepath"
 
   "github.com/alexflint/go-arg"
+  "github.com/brinkt/archive-audio/details"
+  "github.com/brinkt/archive-audio/ffmpeg"
+  "github.com/brinkt/archive-audio/utils"
 )
 
 // go-args: define app args
@@ -65,10 +68,10 @@ func Download(fileUrl, outPath string) string {
 func AlbumArtwork(imgUrl, outPath string) string {
   downloadPath := Download(imgUrl, outPath)
   if len(downloadPath) > 0 {
-    f := newFfmpeg(path.Join(outPath, downloadPath))
+    f := ffmpeg.Create(path.Join(outPath, downloadPath))
 
     optImg := path.Join(outPath, "folder.jpg")
-    err := f.optimizeAlbumArt(optImg)
+    err := f.OptimizeAlbumArt(optImg)
     if err != nil {
       log.Fatal(err)
     }
@@ -78,11 +81,11 @@ func AlbumArtwork(imgUrl, outPath string) string {
 }
 
 // main process
-func Handle(d Details, args args) {
+func Handle(d details.Details, args args) {
   fmt.Println("Aritst:", d.Artist)
   fmt.Println("Album:", d.Album)
 
-  meta := Metadata{
+  meta := ffmpeg.Metadata{
     Artist: d.Artist,
     Album: d.Album,
     Date: strings.Replace(d.Date, ".", "-", -1),
@@ -111,10 +114,11 @@ func Handle(d Details, args args) {
     fmt.Printf("Converting '%s' to '%s' mp3...\n", d.Tracks[i].Source, args.Quality)
 
     inFile := path.Join(outPath, d.Tracks[i].Source)
-    outFile:= path.Join(outPath, safeFilename(meta.Track + " - " + meta.Title + ".mp3"))
+    outFile:= path.Join(outPath, utils.SafeFilename(
+      meta.Track + " - " + meta.Title + ".mp3"))
 
-    f := newFfmpeg(inFile)
-    err := f.toMp3(args.Quality, meta, outFile)
+    f := ffmpeg.Create(inFile)
+    err := f.ToMp3(args.Quality, meta, outFile)
     if err != nil {
       log.Fatal(err)
     }
@@ -131,16 +135,16 @@ func main() {
   p := arg.MustParse(&args)
 
   // check ffmpeg installed
-  whichFfmpeg()
+  ffmpeg.Which()
 
   // check url
-  valid, err := validUrl(args.Url)
+  valid, err := details.ValidUrl(args.Url)
   if !valid {
     p.Fail(err)
   }
 
   // check output directory
-  if isDirectory(args.Dir) == false {
+  if utils.IsDirectory(args.Dir) == false {
     // default to working directory
     d, err := filepath.Abs("./")
     if err != nil {
@@ -155,7 +159,7 @@ func main() {
   }
 
   fmt.Printf("\nProcessing URL: %s...\n\n", args.Url)
-  d := processUrl(args.Url)
+  d := details.ProcessUrl(args.Url)
 
   // ensure metadata extraction was successful
   if len(d.Artist) == 0 || len(d.Date) == 0 ||

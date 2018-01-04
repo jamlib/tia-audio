@@ -1,4 +1,4 @@
-package main
+package ffmpeg
 
 import (
   "fmt"
@@ -22,7 +22,7 @@ type Metadata struct {
 }
 
 // check that ffmpeg is installed on system
-func whichFfmpeg() string {
+func Which() string {
   path, err := exec.LookPath("ffmpeg")
   if err != nil {
     log.Fatalf("Error: ffmpeg not found on system")
@@ -32,8 +32,8 @@ func whichFfmpeg() string {
 }
 
 // new ffmpeg wrapper where args can be added
-func newFfmpeg(input string) *ffmpeg {
-  return &ffmpeg{exec.Command(whichFfmpeg(), "-i", input)}
+func Create(input string) *ffmpeg {
+  return &ffmpeg{exec.Command(Which(), "-i", input)}
 }
 
 // add additional arguments
@@ -59,13 +59,13 @@ func (f *ffmpeg) run(output string) error {
 }
 
 // optimize image as embedded album art
-func (f *ffmpeg) optimizeAlbumArt(output string) error {
+func (f *ffmpeg) OptimizeAlbumArt(output string) error {
   f.setArgs("-y", "-qscale:v", "2", "-vf", "scale=500:-1")
   return f.run(output)
 }
 
 // convert lossless to mp3
-func (f *ffmpeg) toMp3(quality string, meta Metadata, output string) error {
+func (f *ffmpeg) ToMp3(quality string, meta Metadata, output string) error {
   if len(meta.Artwork) > 0 {
     f.setArgs("-i", meta.Artwork)
   }

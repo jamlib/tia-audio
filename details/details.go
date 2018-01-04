@@ -1,7 +1,7 @@
 // archive.org details page
 // ie, https://archive.org/details/*
 
-package main
+package details
 
 import (
   "fmt"
@@ -11,6 +11,8 @@ import (
   "net/http"
   "io/ioutil"
   "encoding/json"
+
+  "github.com/brinkt/archive-audio/utils"
 )
 
 type Track struct {
@@ -35,7 +37,7 @@ type Details struct {
 }
 
 // validates an archive.org/details url
-func validUrl(url string) (bool, string) {
+func ValidUrl(url string) (bool, string) {
   valid, _ := regexp.MatchString("^htt(p|ps)://archive.org/details/.+", url)
   if valid {
     return true, ""
@@ -45,7 +47,7 @@ func validUrl(url string) (bool, string) {
 }
 
 // make url request & parse data from archive.org details response
-func processUrl(url string) Details {
+func ProcessUrl(url string) Details {
   // http request
   resp, err := http.Get(url)
   if err != nil {
@@ -58,7 +60,7 @@ func processUrl(url string) Details {
     log.Fatal(e)
   }
 
-  dResp := DetailsResponse{Body: fixWhitespace(string(body))}
+  dResp := DetailsResponse{Body: utils.FixWhitespace(string(body))}
 
   d := Details{
     Url: url,
@@ -84,13 +86,14 @@ func processUrl(url string) Details {
 
 // parse 'artist' from HTML body
 func (d *DetailsResponse) parseArtist() string {
-  return removeHtml(regexpBetween(`<div class="key-val-big"> by `, `</div>`, d.Body))
+  return utils.RemoveHtml(utils.RegexpBetween(
+    `<div class="key-val-big"> by `, `</div>`, d.Body))
 }
 
 // parse 'artwork url' from HTML body
 func (d *DetailsResponse) parseArtwork() string {
-  s := regexpBetween(`<div id="theatre-controls">`, `<div id="cher-modal"`, d.Body)
-  s = regexpBetween(`<img src="`, `"`, s)
+  s := utils.RegexpBetween(`<div id="theatre-controls">`, `<div id="cher-modal"`, d.Body)
+  s = utils.RegexpBetween(`<img src="`, `"`, s)
 
   // replace after .ext
   // ie, image.jpg?other-data => image.jpg
@@ -99,7 +102,7 @@ func (d *DetailsResponse) parseArtwork() string {
 
 // parse 'date' from HTML body
 func (d *DetailsResponse) parseDate() string {
-  s := removeHtml(regexpBetween(
+  s := utils.RemoveHtml(utils.RegexpBetween(
     `<div class="key-val-big"> Publication date `, `</a>`, d.Body))
 
   // use periods instead of dashes, ie 2018.01.01
@@ -108,8 +111,8 @@ func (d *DetailsResponse) parseDate() string {
 
 // parse 'venue' & 'location' from HTML body
 func (d *DetailsResponse) parseVenueAndLocation(id string) string {
-  s := regexpBetween(`href="/search.php?query=`+id, `/a>`, d.Body)
-  return regexpBetween(`>`, `<`, s)
+  s := utils.RegexpBetween(`href="/search.php?query=`+id, `/a>`, d.Body)
+  return utils.RegexpBetween(`>`, `<`, s)
 }
 
 func (d *DetailsResponse) parseVenue() string {
@@ -122,7 +125,7 @@ func (d *DetailsResponse) parseLocation() string {
 
 // parse 'tracks' from HTML body JSON
 func (d *DetailsResponse) parseTracks() []Track {
-  s := regexpBetween(`Play('jw6', `, `, {"start"`, d.Body)
+  s := utils.RegexpBetween(`Play('jw6', `, `, {"start"`, d.Body)
   tracks := []Track{}
 
   if len(s) > 0 {
@@ -139,7 +142,7 @@ func (d *DetailsResponse) parseTracks() []Track {
     tracks[i].Title = regexp.MustCompile(reg2).FindString(tracks[i].Title)
 
     // fix remaining whitespace
-    tracks[i].Title = fixWhitespace(tracks[i].Title)
+    tracks[i].Title = utils.FixWhitespace(tracks[i].Title)
   }
 
   return tracks

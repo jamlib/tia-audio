@@ -1,6 +1,6 @@
 // general utility functions
 
-package main
+package utils
 
 import (
   "os"
@@ -9,7 +9,7 @@ import (
 )
 
 // check if path is valid directory
-func isDirectory(p string) bool {
+func IsDirectory(p string) bool {
   fileInfo, err := os.Stat(p)
   if err != nil {
     return false
@@ -18,12 +18,12 @@ func isDirectory(p string) bool {
 }
 
 // replaces \ & / from proposed file name
-func safeFilename(f string) string {
+func SafeFilename(f string) string {
   return regexp.MustCompile(`[\/\\]+`).ReplaceAllString(f, "_")
 }
 
 // replace whitespaces with one space
-func fixWhitespace(s string) string {
+func FixWhitespace(s string) string {
   return strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(s, " "))
 }
 
@@ -34,7 +34,7 @@ func fixWhitespace(s string) string {
   trims BEFORE & AFTER from result
 */
 
-func regexpBetween(before, after, within string) string {
+func RegexpBetween(before, after, within string) string {
   r := `(?s)` + regexp.QuoteMeta(before) + `.*?` +
     regexp.QuoteMeta(after)
 
@@ -49,7 +49,7 @@ func regexpBetween(before, after, within string) string {
 }
 
 // remove HTML aka stuff betwee < & > from string
-func removeHtml(body string) string {
+func RemoveHtml(body string) string {
   return strings.TrimSpace(
     regexp.MustCompile(`<[^<>]+>`).ReplaceAllString(body, ""))
 }
