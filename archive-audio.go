@@ -30,7 +30,7 @@ func (args) Description() string {
 
 // go-args: print app version
 func (args) Version() string {
-  return "archive-audio 0.0.3\n"
+  return "archive-audio 0.0.4\n"
 }
 
 // download file
@@ -66,16 +66,14 @@ func download(fileUrl, outPath string) string {
 
 // download & optimize album artwork
 func albumArtwork(imgUrl, outPath string) string {
-  downloadPath := download(imgUrl, outPath)
-  if len(downloadPath) > 0 {
-    f := ffmpeg.Create(path.Join(outPath, downloadPath))
-
-    optImg := path.Join(outPath, "folder.jpg")
-    err := f.OptimizeAlbumArt(optImg)
+  fileName := download(imgUrl, outPath)
+  if len(fileName) > 0 {
+    outFile := path.Join(outPath, "folder.jpg")
+    err := ffmpeg.OptimizeAlbumArt(path.Join(outPath, fileName), outFile)
     if err != nil {
       log.Fatal(err)
     }
-    return optImg
+    return outFile
   }
   return ""
 }
@@ -117,8 +115,7 @@ func process(d details.Details, args args) {
     outFile:= path.Join(outPath, utils.SafeFilename(
       meta.Track + " - " + meta.Title + ".mp3"))
 
-    f := ffmpeg.Create(inFile)
-    err := f.ToMp3(args.Quality, meta, outFile)
+    err := ffmpeg.ToMp3(inFile, args.Quality, meta, outFile)
     if err != nil {
       log.Fatal(err)
     }

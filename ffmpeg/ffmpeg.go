@@ -30,7 +30,7 @@ func Which() (string, error) {
 }
 
 // new ffmpeg wrapper where args can be added
-func Create(input string) *ffmpeg {
+func new(input string) *ffmpeg {
   bin, _ := Which()
   return &ffmpeg{exec.Command(bin, "-i", input)}
 }
@@ -56,13 +56,16 @@ func (f *ffmpeg) run() error {
 }
 
 // optimize image as embedded album art
-func (f *ffmpeg) OptimizeAlbumArt(output string) error {
+func OptimizeAlbumArt(input, output string) error {
+  f := new(input)
   f.setArgs("-y", "-qscale:v", "2", "-vf", "scale=500:-1", output)
   return f.run()
 }
 
 // convert lossless to mp3
-func (f *ffmpeg) ToMp3(quality string, meta Metadata, output string) error {
+func ToMp3(input, quality string, meta Metadata, output string) error {
+  f := new(input)
+
   if len(meta.Artwork) > 0 {
     f.setArgs("-i", meta.Artwork)
   }
