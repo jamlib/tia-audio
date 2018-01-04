@@ -4,6 +4,7 @@
 package main
 
 import (
+  "fmt"
   "log"
   "regexp"
   "strings"
@@ -13,16 +14,20 @@ import (
 )
 
 type Track struct {
-  Num int
+  Num string
   Title string `json:"title"`
   Source string `json:"orig"`
 }
 
+type DetailsResponse struct {
+  Body string
+}
+
 type Details struct {
   Url string
-  Body string
-  Artist string
   Artwork string
+  Artist string
+  Album string
   Date string
   Venue string
   Location string
@@ -44,74 +49,85 @@ func processUrl(url string) Details {
   // http request
   resp, err := http.Get(url)
   if err != nil {
-    log.Fatalf("http archive.org error")
+    log.Fatal(err)
   }
   defer resp.Body.Close()
-  body, err := ioutil.ReadAll(resp.Body)
+
+  body, e := ioutil.ReadAll(resp.Body)
+  if e != nil {
+    log.Fatal(e)
+  }
+
+  dResp := DetailsResponse{Body: fixWhitespace(string(body))}
 
   d := Details{
     Url: url,
-    Body: fixWhitespace(string(body)),
+    Artwork: dResp.parseArtwork(),
+    Artist: dResp.parseArtist(),
+    Date: dResp.parseDate(),
+    Venue: dResp.parseVenue(),
+    Location: dResp.parseLocation(),
+    Tracks: dResp.parseTracks(),
   }
+  d.Album = fmt.Sprintf("%s %s, %s", d.Date, d.Venue, d.Location)
 
-  // parse all from details.Body
-  d.parseArtist()
-  d.parseArtwork()
-  d.parseDate()
-  d.parseVenue()
-  d.parseLocation()
-  d.parseTracks()
+  for i := range d.Tracks {
+    d.Tracks[i].Num = fmt.Sprintf("%02d", i + 1)
+
+    if len(d.Tracks[i].Title) == 0 || len(d.Tracks[i].Source) == 0 {
+      log.Fatalf("Error: blank track metadata")
+    }
+  }
 
   return d
 }
 
 // parse 'artist' from HTML body
-func (d *Details) parseArtist() {
-  d.Artist = removeHtml(regexpBetween(`<div class="key-val-big"> by `, `</div>`, d.Body))
+func (d *DetailsResponse) parseArtist() string {
+  return removeHtml(regexpBetween(`<div class="key-val-big"> by `, `</div>`, d.Body))
 }
 
 // parse 'artwork url' from HTML body
-func (d *Details) parseArtwork() {
+func (d *DetailsResponse) parseArtwork() string {
   s := regexpBetween(`<div id="theatre-controls">`, `<div id="cher-modal"`, d.Body)
   s = regexpBetween(`<img src="`, `"`, s)
 
-  // replace after .ext? including ?
+  // replace after .ext
   // ie, image.jpg?other-data => image.jpg
-  d.Artwork = regexp.MustCompile(`\?.+$`).ReplaceAllString(s, "")
+  return regexp.MustCompile(`\?.+$`).ReplaceAllString(s, "")
 }
 
 // parse 'date' from HTML body
-func (d *Details) parseDate() {
+func (d *DetailsResponse) parseDate() string {
   s := removeHtml(regexpBetween(
     `<div class="key-val-big"> Publication date `, `</a>`, d.Body))
 
   // use periods instead of dashes, ie 2018.01.01
-  d.Date = strings.Replace(s, "-", ".", -1)
+  return strings.Replace(s, "-", ".", -1)
 }
 
 // parse 'venue' & 'location' from HTML body
-func (d *Details) parseVenueAndLocation(id string) string {
+func (d *DetailsResponse) parseVenueAndLocation(id string) string {
   s := regexpBetween(`href="/search.php?query=`+id, `/a>`, d.Body)
   return regexpBetween(`>`, `<`, s)
 }
 
-func (d *Details) parseVenue() {
-  d.Venue = d.parseVenueAndLocation("venue")
+func (d *DetailsResponse) parseVenue() string {
+  return d.parseVenueAndLocation("venue")
 }
 
-func (d *Details) parseLocation() {
-  d.Location = d.parseVenueAndLocation("coverage")
+func (d *DetailsResponse) parseLocation() string {
+  return d.parseVenueAndLocation("coverage")
 }
 
 // parse 'tracks' from HTML body JSON
-func (d *Details) parseTracks() {
+func (d *DetailsResponse) parseTracks() []Track {
   s := regexpBetween(`Play('jw6', `, `, {"start"`, d.Body)
-  if len(s) == 0 {
-    return
-  }
-
   tracks := []Track{}
-  json.Unmarshal([]byte(s), &tracks)
+
+  if len(s) > 0 {
+    json.Unmarshal([]byte(s), &tracks)
+  }
 
   for i := range tracks {
     // remove preceding track number
@@ -122,9 +138,9 @@ func (d *Details) parseTracks() {
     reg2 := `([A-Z]|[a-z]|[0-9]|[',./!?&> ()])+`
     tracks[i].Title = regexp.MustCompile(reg2).FindString(tracks[i].Title)
 
-    // trim remaining whitespace
+    // fix remaining whitespace
     tracks[i].Title = fixWhitespace(tracks[i].Title)
   }
 
-  d.Tracks = tracks
+  return tracks
 }

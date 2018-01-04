@@ -5,7 +5,6 @@ import (
   "fmt"
   "io"
   "log"
-  "regexp"
   "strings"
   "net/http"
   "path"
@@ -28,7 +27,7 @@ func (args) Description() string {
 
 // go-args: print app version
 func (args) Version() string {
-  return "archive-audio 0.0.1\n"
+  return "archive-audio 0.0.2\n"
 }
 
 // download file
@@ -80,56 +79,47 @@ func AlbumArtwork(imgUrl, outPath string) string {
 
 // main process
 func Handle(d Details, args args) {
-  album := fmt.Sprintf("%s %s, %s", d.Date, d.Venue, d.Location)
   fmt.Println("Aritst:", d.Artist)
-  fmt.Println("Album:", album)
+  fmt.Println("Album:", d.Album)
 
   meta := Metadata{
     Artist: d.Artist,
-    Album: album,
+    Album: d.Album,
     Date: strings.Replace(d.Date, ".", "-", -1),
   }
 
   // create directory
-  savePath := d.Artist + "/" + d.Date[:4] + "/" + album
-  args.Dir = path.Join(args.Dir, savePath)
-  os.MkdirAll(args.Dir, 0775)
+  outPath := path.Join(args.Dir, d.Artist + "/" + d.Date[:4] + "/" + d.Album)
+  os.MkdirAll(outPath, 0775)
 
-  albumArt := AlbumArtwork(d.Artwork, args.Dir)
+  albumArt := AlbumArtwork(d.Artwork, outPath)
   if len(albumArt) > 0 {
     fmt.Println("Album Art:", albumArt)
     meta.Artwork = albumArt
   }
 
   for i := range d.Tracks {
-    meta.Track = fmt.Sprintf("%02d", i + 1)
+    meta.Track = d.Tracks[i].Num
     meta.Title = d.Tracks[i].Title
-
-    // title: replaces / or \ with _
-    titlePath := regexp.MustCompile(`[\/\\]`).ReplaceAllString(meta.Title, "_")
-
-    if len(meta.Title) == 0 || len(d.Tracks[i].Source) == 0 {
-      log.Fatalf("Error: blank track metadata")
-    }
 
     fmt.Println("\nTrack:", meta.Track)
     fmt.Println("Title:", meta.Title)
 
     downloadUrl := strings.Replace(d.Url, "/details/", "/download/", -1)
-    Download(downloadUrl + "/" + d.Tracks[i].Source, args.Dir)
+    Download(downloadUrl + "/" + d.Tracks[i].Source, outPath)
 
     fmt.Printf("Converting '%s' to '%s' mp3...\n", d.Tracks[i].Source, args.Quality)
 
-    inPath := path.Join(args.Dir, d.Tracks[i].Source)
-    outPath := path.Join(args.Dir, meta.Track + " - " + titlePath + ".mp3")
+    inFile := path.Join(outPath, d.Tracks[i].Source)
+    outFile:= path.Join(outPath, safeFilename(meta.Track + " - " + meta.Title + ".mp3"))
 
-    f := newFfmpeg(inPath)
-    err := f.toMp3(args.Quality, meta, outPath)
+    f := newFfmpeg(inFile)
+    err := f.toMp3(args.Quality, meta, outFile)
     if err != nil {
       log.Fatal(err)
     }
 
-    os.Remove(inPath)
+    os.Remove(inFile)
   }
 
   fmt.Println("\nProcess Completed!\n")

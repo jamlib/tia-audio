@@ -17,6 +17,11 @@ func isDirectory(p string) bool {
   return fileInfo.IsDir()
 }
 
+// replaces \ & / from proposed file name
+func safeFilename(f string) string {
+  return regexp.MustCompile(`[\/\\]+`).ReplaceAllString(f, "_")
+}
+
 // replace whitespaces with one space
 func fixWhitespace(s string) string {
   return strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(s, " "))
