@@ -3,19 +3,9 @@
 package utils
 
 import (
-  "os"
   "regexp"
   "strings"
 )
-
-// check if path is valid directory
-func IsDirectory(p string) bool {
-  fileInfo, err := os.Stat(p)
-  if err != nil {
-    return false
-  }
-  return fileInfo.IsDir()
-}
 
 // replaces \ & / from proposed file name
 func SafeFilename(f string) string {

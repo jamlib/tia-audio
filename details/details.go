@@ -5,7 +5,7 @@ package details
 
 import (
   "fmt"
-  "log"
+  "errors"
   "regexp"
   "strings"
   "net/http"
@@ -37,32 +37,34 @@ type Details struct {
 }
 
 // validates an archive.org/details url
-func ValidUrl(url string) (bool, string) {
+func InvalidUrl(url string) error {
   valid, _ := regexp.MatchString("^htt(p|ps)://archive.org/details/.+", url)
-  if valid {
-    return true, ""
+  if !valid {
+    return errors.New("URL must be a valid archive.org details url\n" +
+      "ie, https://archive.org/details/jrad2017-01-12.cmc621.cmc64.sbd.matrix.flac16\n")
   }
-  return false, "URL must be a valid archive.org details url\n" + 
-    "ie, https://archive.org/details/jrad2017-01-12.cmc621.cmc64.sbd.matrix.flac16\n"
+  return nil
 }
 
 // make url request & parse data from archive.org details response
-func ProcessUrl(url string) Details {
+func ProcessUrl(url string) (Details, error) {
+  d := Details{}
+
   // http request
   resp, err := http.Get(url)
   if err != nil {
-    log.Fatal(err)
+    return d, err
   }
   defer resp.Body.Close()
 
   body, e := ioutil.ReadAll(resp.Body)
   if e != nil {
-    log.Fatal(e)
+    return d, e
   }
 
   dResp := DetailsResponse{Body: utils.FixWhitespace(string(body))}
 
-  d := Details{
+  d = Details{
     Url: url,
     Artwork: dResp.parseArtwork(),
     Artist: dResp.parseArtist(),
@@ -71,17 +73,33 @@ func ProcessUrl(url string) Details {
     Location: dResp.parseLocation(),
     Tracks: dResp.parseTracks(),
   }
+
+  var strErr string
+
+  // include error if metadata incomplete
+  if len(d.Artist) == 0 || len(d.Date) == 0 ||
+    len(d.Venue) == 0 || len(d.Location) == 0 {
+    strErr = "Error in parse of metadata {Artist, Date, Venue, Location}. "
+  }
+
   d.Album = fmt.Sprintf("%s %s, %s", d.Date, d.Venue, d.Location)
 
-  for i := range d.Tracks {
-    d.Tracks[i].Num = fmt.Sprintf("%02d", i + 1)
+  // include error if no tracks found
+  if len(d.Tracks) == 0 {
+    strErr += "Error in parse of tracks json data. "
+  }
 
+  // include error if tracks json data incomplete
+  for i := range d.Tracks {
     if len(d.Tracks[i].Title) == 0 || len(d.Tracks[i].Source) == 0 {
-      log.Fatalf("Error: blank track metadata")
+      strErr += "Error in tracks json data {Title, Source}. "
     }
   }
 
-  return d
+  if len(strErr) > 0 {
+    return d, errors.New(strErr)
+  }
+  return d, nil
 }
 
 // parse 'artist' from HTML body
@@ -133,6 +151,9 @@ func (d *DetailsResponse) parseTracks() []Track {
   }
 
   for i := range tracks {
+    // set track num
+    tracks[i].Num = fmt.Sprintf("%02d", i + 1)
+
     // remove preceding track number
     tracks[i].Title = regexp.MustCompile(`^\d+\.\s+`).
       ReplaceAllString(tracks[i].Title, "")

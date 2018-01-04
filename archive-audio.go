@@ -30,11 +30,11 @@ func (args) Description() string {
 
 // go-args: print app version
 func (args) Version() string {
-  return "archive-audio 0.0.2\n"
+  return "archive-audio 0.0.3\n"
 }
 
 // download file
-func Download(fileUrl, outPath string) string {
+func download(fileUrl, outPath string) string {
   if len(fileUrl) == 0 {
     return ""
   }
@@ -65,8 +65,8 @@ func Download(fileUrl, outPath string) string {
 }
 
 // download & optimize album artwork
-func AlbumArtwork(imgUrl, outPath string) string {
-  downloadPath := Download(imgUrl, outPath)
+func albumArtwork(imgUrl, outPath string) string {
+  downloadPath := download(imgUrl, outPath)
   if len(downloadPath) > 0 {
     f := ffmpeg.Create(path.Join(outPath, downloadPath))
 
@@ -80,8 +80,8 @@ func AlbumArtwork(imgUrl, outPath string) string {
   return ""
 }
 
-// main process
-func Handle(d details.Details, args args) {
+// process archive.org details
+func process(d details.Details, args args) {
   fmt.Println("Aritst:", d.Artist)
   fmt.Println("Album:", d.Album)
 
@@ -95,7 +95,7 @@ func Handle(d details.Details, args args) {
   outPath := path.Join(args.Dir, d.Artist + "/" + d.Date[:4] + "/" + d.Album)
   os.MkdirAll(outPath, 0775)
 
-  albumArt := AlbumArtwork(d.Artwork, outPath)
+  albumArt := albumArtwork(d.Artwork, outPath)
   if len(albumArt) > 0 {
     fmt.Println("Album Art:", albumArt)
     meta.Artwork = albumArt
@@ -109,7 +109,7 @@ func Handle(d details.Details, args args) {
     fmt.Println("Title:", meta.Title)
 
     downloadUrl := strings.Replace(d.Url, "/details/", "/download/", -1)
-    Download(downloadUrl + "/" + d.Tracks[i].Source, outPath)
+    download(downloadUrl + "/" + d.Tracks[i].Source, outPath)
 
     fmt.Printf("Converting '%s' to '%s' mp3...\n", d.Tracks[i].Source, args.Quality)
 
@@ -135,20 +135,22 @@ func main() {
   p := arg.MustParse(&args)
 
   // check ffmpeg installed
-  ffmpeg.Which()
+  if _, e0 := ffmpeg.Which(); e0 != nil {
+    p.Fail(e0.Error())
+  }
 
   // check url
-  valid, err := details.ValidUrl(args.Url)
-  if !valid {
-    p.Fail(err)
+  if e1 := details.InvalidUrl(args.Url); e1 != nil {
+    p.Fail(e1.Error())
   }
 
   // check output directory
-  if utils.IsDirectory(args.Dir) == false {
+  dirStat, e2 := os.Stat(args.Dir)
+  if e2 != nil || !dirStat.IsDir() {
     // default to working directory
-    d, err := filepath.Abs("./")
-    if err != nil {
-      log.Fatal(err)
+    d, e3 := filepath.Abs("./")
+    if e3 != nil {
+      log.Fatal(e3)
     }
     args.Dir = d
   }
@@ -159,13 +161,13 @@ func main() {
   }
 
   fmt.Printf("\nProcessing URL: %s...\n\n", args.Url)
-  d := details.ProcessUrl(args.Url)
-
-  // ensure metadata extraction was successful
-  if len(d.Artist) == 0 || len(d.Date) == 0 ||
-    len(d.Venue) == 0 || len(d.Location) == 0 {
-    log.Fatalf("Error: unable to parse metadata from HTML")
+  d, err := details.ProcessUrl(args.Url)
+  if err != nil {
+    // debug Details{}
+    fmt.Printf("%s\n", err.Error())
+    fmt.Printf("\n%#v\n\n", d)
+    os.Exit(1)
   }
 
-  Handle(d, args)
+  process(d, args)
 }
