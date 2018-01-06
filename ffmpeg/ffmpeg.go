@@ -30,18 +30,18 @@ func Which() (string, error) {
 }
 
 // new ffmpeg wrapper where args can be added
-func new(input string) *ffmpeg {
+func New(args ...string) *ffmpeg {
   bin, _ := Which()
-  return &ffmpeg{exec.Command(bin, "-i", input)}
+  return &ffmpeg{exec.Command(bin, args...)}
 }
 
 // add additional arguments
-func (f *ffmpeg) setArgs(args ...string) {
+func (f *ffmpeg) AddArgs(args ...string) {
   f.Args = append(f.Args, args...)
 }
 
 // run ffmpeg (capture stdout & stderr)
-func (f *ffmpeg) run() (string, error) {
+func (f *ffmpeg) Exec() (string, error) {
   var out bytes.Buffer
   var stderr bytes.Buffer
   f.Stdout = &out
@@ -56,43 +56,42 @@ func (f *ffmpeg) run() (string, error) {
 
 // optimize image as embedded album art
 func OptimizeAlbumArt(input, output string) (string, error) {
-  f := new(input)
-  f.setArgs("-y", "-qscale:v", "2", "-vf", "scale=500:-1", output)
-  return f.run()
+  return New("-i", input, "-y", "-qscale:v", "2",
+    "-vf", "scale=500:-1", output).Exec()
 }
 
 // convert lossless to mp3
 func ToMp3(input, quality string, meta Metadata, output string) (string, error) {
-  f := new(input)
+  f := New("-i", input)
 
   if len(meta.Artwork) > 0 {
-    f.setArgs("-i", meta.Artwork)
+    f.AddArgs("-i", meta.Artwork)
   }
 
   // mp3 audio codec
-  f.setArgs("-map", "0:a", "-codec:a", "libmp3lame")
+  f.AddArgs("-map", "0:a", "-codec:a", "libmp3lame")
 
   // mp3 audio quality
   if quality == "320" {
-    f.setArgs("-b:a", "320k")
+    f.AddArgs("-b:a", "320k")
   } else {
-    f.setArgs("-qscale:a", "0")
+    f.AddArgs("-qscale:a", "0")
   }
 
   // id3v2 metadata
-  f.setArgs("-id3v2_version", "4")
-  f.setArgs("-metadata", "artist=" + meta.Artist)
-  f.setArgs("-metadata", "album=" + meta.Album)
-  f.setArgs("-metadata", "title=" + meta.Title)
-  f.setArgs("-metadata", "track=" + meta.Track)
-  f.setArgs("-metadata", "date=" + meta.Date)
+  f.AddArgs("-id3v2_version", "4")
+  f.AddArgs("-metadata", "artist=" + meta.Artist)
+  f.AddArgs("-metadata", "album=" + meta.Album)
+  f.AddArgs("-metadata", "title=" + meta.Title)
+  f.AddArgs("-metadata", "track=" + meta.Track)
+  f.AddArgs("-metadata", "date=" + meta.Date)
 
   // embedd album artwork
   if len(meta.Artwork) > 0 {
-    f.setArgs("-map", "1:v", "-c:v", "copy", "-metadata:s:v", "title=Album cover",
+    f.AddArgs("-map", "1:v", "-c:v", "copy", "-metadata:s:v", "title=Album cover",
       "-metadata:s:v", "comment=Cover (Front)")
   }
 
-  f.setArgs("-y", output)
-  return f.run()
+  f.AddArgs("-y", output)
+  return f.Exec()
 }
