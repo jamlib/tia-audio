@@ -40,9 +40,8 @@ func (f *ffmpeg) setArgs(args ...string) {
   f.Args = append(f.Args, args...)
 }
 
-// append output as final arg & run ffmpeg
-func (f *ffmpeg) run() error {
-  // include ffmpeg debug message
+// run ffmpeg (capture stdout & stderr)
+func (f *ffmpeg) run() (string, error) {
   var out bytes.Buffer
   var stderr bytes.Buffer
   f.Stdout = &out
@@ -50,20 +49,20 @@ func (f *ffmpeg) run() error {
 
   err := f.Run()
   if err != nil {
-    return errors.New(fmt.Sprint(err) + ": " + stderr.String())
+    return "", errors.New(fmt.Sprint(err) + ": " + stderr.String())
   }
-  return err
+  return out.String(), nil
 }
 
 // optimize image as embedded album art
-func OptimizeAlbumArt(input, output string) error {
+func OptimizeAlbumArt(input, output string) (string, error) {
   f := new(input)
   f.setArgs("-y", "-qscale:v", "2", "-vf", "scale=500:-1", output)
   return f.run()
 }
 
 // convert lossless to mp3
-func ToMp3(input, quality string, meta Metadata, output string) error {
+func ToMp3(input, quality string, meta Metadata, output string) (string, error) {
   f := new(input)
 
   if len(meta.Artwork) > 0 {

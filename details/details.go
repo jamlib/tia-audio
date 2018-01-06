@@ -7,7 +7,6 @@ import (
   "fmt"
   "errors"
   "regexp"
-  "strings"
   "net/http"
   "io/ioutil"
   "encoding/json"
@@ -29,7 +28,6 @@ type Details struct {
   Url string
   Artwork string
   Artist string
-  Album string
   Date string
   Venue string
   Location string
@@ -57,9 +55,9 @@ func ProcessUrl(url string) (Details, error) {
   }
   defer resp.Body.Close()
 
-  body, e := ioutil.ReadAll(resp.Body)
-  if e != nil {
-    return d, e
+  body, err := ioutil.ReadAll(resp.Body)
+  if err != nil {
+    return d, err
   }
 
   dResp := DetailsResponse{Body: utils.FixWhitespace(string(body))}
@@ -73,16 +71,15 @@ func ProcessUrl(url string) (Details, error) {
     Location: dResp.parseLocation(),
     Tracks: dResp.parseTracks(),
   }
-  d.Album = fmt.Sprintf("%s %s, %s", d.Date, d.Venue, d.Location)
 
-  if errStr := d.validate(); errStr != "" {
-    return d, errors.New(errStr)
+  if invalid := d.validate(); invalid != nil {
+    return d, invalid
   }
   return d, nil
 }
 
 // validate Details{}
-func (d *Details) validate() string {
+func (d *Details) validate() error {
   var strErr string
 
   // include error if metadata incomplete
@@ -103,7 +100,10 @@ func (d *Details) validate() string {
     }
   }
 
-  return strErr
+  if len(strErr) > 0 {
+    return errors.New(strErr)
+  }
+  return nil
 }
 
 // parse 'artist' from HTML body
@@ -124,11 +124,8 @@ func (d *DetailsResponse) parseArtwork() string {
 
 // parse 'date' from HTML body
 func (d *DetailsResponse) parseDate() string {
-  s := utils.RemoveHtml(utils.RegexpBetween(
+  return utils.RemoveHtml(utils.RegexpBetween(
     `<div class="key-val-big"> Publication date `, `</a>`, d.Body))
-
-  // use periods instead of dashes, ie 2018.01.01
-  return strings.Replace(s, "-", ".", -1)
 }
 
 // parse 'venue' & 'location' from HTML body

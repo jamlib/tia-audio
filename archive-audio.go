@@ -65,39 +65,37 @@ func download(fileUrl, outPath string) string {
 }
 
 // download & optimize album artwork
-func albumArtwork(imgUrl, outPath string) string {
+func albumArtwork(imgUrl, outPath string, meta *ffmpeg.Metadata) {
   fileName := download(imgUrl, outPath)
   if len(fileName) > 0 {
     outFile := path.Join(outPath, "folder.jpg")
-    err := ffmpeg.OptimizeAlbumArt(path.Join(outPath, fileName), outFile)
+    _, err := ffmpeg.OptimizeAlbumArt(path.Join(outPath, fileName), outFile)
     if err != nil {
       log.Fatal(err)
     }
-    return outFile
+    fmt.Println("Album Art:", outFile)
+    meta.Artwork = outFile
   }
-  return ""
 }
 
 // process archive.org details
 func process(d details.Details, args args) {
-  fmt.Println("Aritst:", d.Artist)
-  fmt.Println("Album:", d.Album)
-
   meta := ffmpeg.Metadata{
     Artist: d.Artist,
-    Album: d.Album,
-    Date: strings.Replace(d.Date, ".", "-", -1),
+    Date: d.Date,
+    // use periods instead of dashes, ie 2018.01.01
+    Album: fmt.Sprintf("%s %s, %s",
+      strings.Replace(d.Date, "-", ".", -1), d.Venue, d.Location),
   }
+
+  fmt.Println("Aritst:", meta.Artist)
+  fmt.Println("Album:", meta.Album)
 
   // create directory
-  outPath := path.Join(args.Dir, d.Artist + "/" + d.Date[:4] + "/" + d.Album)
+  outPath := path.Join(args.Dir, d.Artist + "/" + d.Date[:4] + "/" + meta.Album)
   os.MkdirAll(outPath, 0775)
 
-  albumArt := albumArtwork(d.Artwork, outPath)
-  if len(albumArt) > 0 {
-    fmt.Println("Album Art:", albumArt)
-    meta.Artwork = albumArt
-  }
+  albumArtwork(d.Artwork, outPath, &meta)
 
   for i := range d.Tracks {
     meta.Track = d.Tracks[i].Num
@@ -115,7 +113,7 @@ func process(d details.Details, args args) {
     outFile:= path.Join(outPath, utils.SafeFilename(
       meta.Track + " - " + meta.Title + ".mp3"))
 
-    err := ffmpeg.ToMp3(inFile, args.Quality, meta, outFile)
+    _, err := ffmpeg.ToMp3(inFile, args.Quality, meta, outFile)
     if err != nil {
       log.Fatal(err)
     }
@@ -129,27 +127,27 @@ func process(d details.Details, args args) {
 // package main entry
 func main() {
   var args args
-  p := arg.MustParse(&args)
-
-  // check ffmpeg installed
-  if _, e0 := ffmpeg.Which(); e0 != nil {
-    p.Fail(e0.Error())
-  }
+  arg.MustParse(&args)
 
   // check url
-  if e1 := details.InvalidUrl(args.Url); e1 != nil {
-    p.Fail(e1.Error())
+  if err := details.InvalidUrl(args.Url); err != nil {
+    log.Fatal(err)
+  }
+
+  // check ffmpeg installed
+  if _, err := ffmpeg.Which(); err != nil {
+    log.Fatal(err)
   }
 
   // check output directory
-  dirStat, e2 := os.Stat(args.Dir)
-  if e2 != nil || !dirStat.IsDir() {
+  dirStat, err := os.Stat(args.Dir)
+  if err != nil || !dirStat.IsDir() {
     // default to working directory
-    d, e3 := filepath.Abs("./")
-    if e3 != nil {
-      log.Fatal(e3)
+    dir, err := filepath.Abs("./")
+    if err != nil {
+      log.Fatal(err)
     }
-    args.Dir = d
+    args.Dir = dir
   }
 
   // set default mp3 quality
@@ -161,9 +159,7 @@ func main() {
   d, err := details.ProcessUrl(args.Url)
   if err != nil {
     // debug Details{}
-    fmt.Printf("%s\n", err.Error())
-    fmt.Printf("\n%#v\n\n", d)
-    os.Exit(1)
+    log.Fatalf("%s\n\n%#v\n\n", err.Error(), d)
   }
 
   process(d, args)
