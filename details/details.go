@@ -11,7 +11,7 @@ import (
   "io/ioutil"
   "encoding/json"
 
-  "github.com/brinkt/archive-audio/utils"
+  "github.com/JamTools/tia-audio/utils"
 )
 
 type Track struct {
@@ -45,24 +45,22 @@ func InvalidUrl(url string) error {
 }
 
 // make url request & parse data from archive.org details response
-func ProcessUrl(url string) (Details, error) {
-  d := Details{}
-
+func ProcessUrl(url string) (*Details, error) {
   // http request
   resp, err := http.Get(url)
   if err != nil {
-    return d, err
+    return &Details{}, err
   }
   defer resp.Body.Close()
 
   body, err := ioutil.ReadAll(resp.Body)
   if err != nil {
-    return d, err
+    return &Details{}, err
   }
 
-  dResp := DetailsResponse{Body: utils.FixWhitespace(string(body))}
+  dResp := &DetailsResponse{Body: utils.FixWhitespace(string(body))}
 
-  d = Details{
+  d := &Details{
     Url: url,
     Artwork: dResp.parseArtwork(),
     Artist: dResp.parseArtist(),

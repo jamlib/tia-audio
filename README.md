@@ -1,13 +1,13 @@
-# archive-audio
+# tia-audio
 
-Download, transcode to mp3, embed album artwork, & tag lossless audio from `archive.org`.
+Download, transcode to mp3, embed album artwork, & tag lossless audio from The Internet Archive (archive.org).
 
 Transcodes to `320 kbps` or `V0` mp3 using `ffmpeg` & `libmp3lame`.
 
 ## Usage
 
 ```
-Usage: archive-audio [--quality QUALITY] [--dir DIR] URL
+Usage: tia-audio [--quality QUALITY] [--dir DIR] URL
 
 Positional arguments:
   URL                    archive.org details url

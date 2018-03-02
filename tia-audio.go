@@ -11,9 +11,9 @@ import (
   "path/filepath"
 
   "github.com/alexflint/go-arg"
-  "github.com/brinkt/archive-audio/details"
-  "github.com/brinkt/archive-audio/ffmpeg"
-  "github.com/brinkt/archive-audio/utils"
+  "github.com/JamTools/tia-audio/details"
+  "github.com/JamTools/tia-audio/ffmpeg"
+  "github.com/JamTools/tia-audio/utils"
 )
 
 // go-args: define app args
@@ -25,12 +25,13 @@ type args struct {
 
 // go-args: print app description
 func (args) Description() string {
-  return "\narchive.org lossless audio downloader, transcoder and tagger"
+  return "\nThe Internet Archive (archive.org) lossless audio downloader, " +
+    "transcoder and tagger"
 }
 
 // go-args: print app version
 func (args) Version() string {
-  return "archive-audio 0.0.4\n"
+  return "tia-audio 0.0.4\n"
 }
 
 // download file
@@ -79,7 +80,7 @@ func albumArtwork(imgUrl, outPath string, meta *ffmpeg.Metadata) {
 }
 
 // process archive.org details
-func process(d details.Details, args args) {
+func process(d *details.Details, args *args) {
   meta := ffmpeg.Metadata{
     Artist: d.Artist,
     Date: d.Date,
@@ -162,5 +163,5 @@ func main() {
     log.Fatalf("%s\n\n%#v\n\n", err.Error(), d)
   }
 
-  process(d, args)
+  process(d, &args)
 }
