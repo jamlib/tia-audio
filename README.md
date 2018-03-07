@@ -41,6 +41,12 @@ The binary will build to the current directory. To test by displaying usage, run
 
     ./tia-audio --help
 
+### Testing
+
+From within source path, run:
+
+    go test -cover ./...
+
 ### Submitting a Pull Request
 
 From within source path, create a new branch to use for development, run:

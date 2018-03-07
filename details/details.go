@@ -44,21 +44,44 @@ func InvalidUrl(url string) error {
   return nil
 }
 
+// http request (with retry)
+func urlRequest(url string) (*DetailsResponse, error) {
+  // actual http request as closure
+  req := func() (body []byte, err error) {
+    resp, err := http.Get(url)
+    if err != nil {
+      return
+    }
+    defer resp.Body.Close()
+
+    body, err = ioutil.ReadAll(resp.Body)
+    return
+  }
+
+  var body []byte
+  var err error
+  d := &DetailsResponse{}
+
+  // retry (3) for connection failures
+  errCount := 0
+  for errCount < 3 && len(d.Body) == 0 {
+    body, err = req()
+    if err != nil {
+      errCount += 1
+    } else {
+      d = &DetailsResponse{Body: utils.FixWhitespace(string(body))}
+    }
+  }
+
+  return d, err
+}
+
 // make url request & parse data from archive.org details response
 func ProcessUrl(url string) (*Details, error) {
-  // http request
-  resp, err := http.Get(url)
+  dResp, err := urlRequest(url)
   if err != nil {
     return &Details{}, err
   }
-  defer resp.Body.Close()
-
-  body, err := ioutil.ReadAll(resp.Body)
-  if err != nil {
-    return &Details{}, err
-  }
-
-  dResp := &DetailsResponse{Body: utils.FixWhitespace(string(body))}
 
   d := &Details{
     Url: url,
@@ -158,8 +181,8 @@ func (d *DetailsResponse) parseTracks() []Track {
       ReplaceAllString(tracks[i].Title, "")
 
     // only allow certain chars
-    reg2 := `([A-Z]|[a-z]|[0-9]|[',./!?&> ()])+`
-    tracks[i].Title = regexp.MustCompile(reg2).FindString(tracks[i].Title)
+    tracks[i].Title = regexp.MustCompile(`([A-Z]|[a-z]|[0-9]|[',./!?&> ()])+`).
+      FindString(tracks[i].Title)
 
     // fix remaining whitespace
     tracks[i].Title = utils.FixWhitespace(tracks[i].Title)
