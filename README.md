@@ -21,17 +21,37 @@ Options:
 
 ## Developing
 
-[Install go](https://golang.org/doc/install).
+### Install Go on Linux
 
-Fork this repo to your github account.
+Download latest go binary from [golang.org/dl](https://golang.org/dl/). In this case, version 1.10.
 
-Clone repo to your github src GOPATH, run:
+Extract to `/usr/local`, run:
 
-    gituser='YOUR-GITHUB-USERNAME'
-    cd $GOPATH/src/github.com && if [ ! -d $gituser ]; then mkdir $gituser; fi && cd $gituser
-    git clone git@github.com:$gituser/tia-audio.git && cd tia-audio
+    sudo tar -C /usr/local -xzf go1.10.linux-amd64.tar.gz
+
+Open ~/.profile for editing, run:
+
+    nano ~/.profile
+
+Append the following, then save/exit:
+
+    export PATH=$PATH:/usr/local/go/bin
+    export GOPATH=$HOME/go
+    export PATH=$PATH:$GOPATH/bin
+
+Source updated profile, run:
+
+    source ~/.profile
 
 ### Building
+
+Get latest source, run:
+
+    go get github.com/JamTools/tia-audio
+
+Navigate to source path, run:
+
+    cd $GOPATH/src/github.com/JamTools/tia-audio
 
 From within source path, run:
 
@@ -49,11 +69,19 @@ From within source path, run:
 
 ### Submitting a Pull Request
 
-From within source path, create a new branch to use for development, run:
+Fork repo on Github.
+
+From within source path, setup new remote, run:
+
+    git remote add myfork git@github.com:$GITHUB-USERNAME/tia-audio.git
+
+Create a new branch to use for development, run:
 
     git checkout -b new-branch
 
-Make your changes, add, commit and push to Github, then back on Github, submit pull request.
+Make your changes, add, commit and push to your Github fork.
+
+Back on Github, submit pull request.
 
 ## License
 
