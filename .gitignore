@@ -1,2 +1,4 @@
 # ignore 'go build' binary
 tia-audio
+
+vendor/

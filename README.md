@@ -39,9 +39,18 @@ Append the following, then save/exit:
     export GOPATH=$HOME/go
     export PATH=$PATH:$GOPATH/bin
 
-Source updated profile, run:
+Source updated profile and ensure go $HOME/go exists, run:
 
     source ~/.profile
+    if [ ! -d $HOME/go ]; then mkdir $HOME/go; fi
+
+### Install Dep
+
+On Linux, to install `dep` for dependency management, run:
+
+    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
+For other OS/environments, refer to the [Dep Installation Documentation](https://golang.github.io/dep/docs/installation.html).
 
 ### Building
 
@@ -52,6 +61,10 @@ Get latest source, run:
 Navigate to source path, run:
 
     cd $GOPATH/src/github.com/JamTools/tia-audio
+
+Ensure dependencies are installed and up-to-date with `dep`, run:
+
+    dep ensure
 
 From within source path, run:
 
@@ -65,7 +78,7 @@ The binary will build to the current directory. To test by displaying usage, run
 
 From within source path, run:
 
-    go test -cover ./...
+    go test -cover -v ./...
 
 ### Submitting a Pull Request
 
