@@ -11,8 +11,8 @@ import (
   "path/filepath"
 
   "github.com/alexflint/go-arg"
+  "github.com/JamTools/goff/ffmpeg"
   "github.com/JamTools/tia-audio/details"
-  "github.com/JamTools/tia-audio/ffmpeg"
   "github.com/JamTools/tia-audio/utils"
 )
 

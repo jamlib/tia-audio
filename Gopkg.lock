@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/JamTools/goff"
+  packages = ["ffmpeg"]
+  revision = "34440f7d953f36e54cafffe4a5bc5dae6bc5f54a"
+
+[[projects]]
+  branch = "master"
   name = "github.com/alexflint/go-arg"
   packages = ["."]
   revision = "0cc8e30fd64c8c71d094be299ad424da93ef9aed"
@@ -16,6 +22,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d13c8ae6d8d302d2df7e0b91e8b06e0b055e2d75bc17eb524f5349cdd052a742"
+  inputs-digest = "224fdef1a1a5a4b4b0639f451583919d786ea91404d09ef11f56556d8367a7ce"
   solver-name = "gps-cdcl"
   solver-version = 1
