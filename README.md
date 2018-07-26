@@ -21,36 +21,7 @@ Options:
 
 ## Developing
 
-### Install Go on Linux
-
-Download latest go binary from [golang.org/dl](https://golang.org/dl/). In this case, version 1.10.
-
-Extract to `/usr/local`, run:
-
-    sudo tar -C /usr/local -xzf go1.10.linux-amd64.tar.gz
-
-Open ~/.profile for editing, run:
-
-    nano ~/.profile
-
-Append the following, then save/exit:
-
-    export PATH=$PATH:/usr/local/go/bin
-    export GOPATH=$HOME/go
-    export PATH=$PATH:$GOPATH/bin
-
-Source updated profile and ensure go $HOME/go exists, run:
-
-    source ~/.profile
-    if [ ! -d $HOME/go ]; then mkdir $HOME/go; fi
-
-### Install Dep
-
-On Linux, to install `dep` for dependency management, run:
-
-    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-
-For other OS/environments, refer to the [Dep Installation Documentation](https://golang.github.io/dep/docs/installation.html).
+[Install Go and Dep](INSTALL_GO_DEP.md).
 
 ### Building
 
