@@ -27,11 +27,11 @@ Options:
 
 Get latest source, run:
 
-    go get github.com/JamTools/tia-audio
+    go get github.com/jamlib/tia-audio
 
 Navigate to source path, run:
 
-    cd $GOPATH/src/github.com/JamTools/tia-audio
+    cd $GOPATH/src/github.com/jamlib/tia-audio
 
 Ensure dependencies are installed and up-to-date with `dep`, run:
 
