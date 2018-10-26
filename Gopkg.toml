@@ -35,4 +35,4 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/JamTools/goff"
+  name = "github.com/jamlib/libaudio"

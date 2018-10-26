@@ -11,7 +11,7 @@ import (
   "io/ioutil"
   "encoding/json"
 
-  "github.com/JamTools/tia-audio/utils"
+  "github.com/jamlib/tia-audio/utils"
 )
 
 type Track struct {

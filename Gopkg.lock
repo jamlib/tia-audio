@@ -3,12 +3,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/JamTools/goff"
-  packages = ["ffmpeg"]
-  revision = "34440f7d953f36e54cafffe4a5bc5dae6bc5f54a"
-
-[[projects]]
-  branch = "master"
   name = "github.com/alexflint/go-arg"
   packages = ["."]
   revision = "0cc8e30fd64c8c71d094be299ad424da93ef9aed"
@@ -19,9 +13,18 @@
   packages = ["."]
   revision = "e80c3b7ed292b052c7083b6fd7154a8422c33f65"
 
+[[projects]]
+  branch = "master"
+  name = "github.com/jamlib/libaudio"
+  packages = [
+    "ffmpeg",
+    "fsutil"
+  ]
+  revision = "241460a81e5e2b18838ddad0d13c11cba4599dc6"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "224fdef1a1a5a4b4b0639f451583919d786ea91404d09ef11f56556d8367a7ce"
+  inputs-digest = "ccf7337c5f827012ac085e8089ad4a67365a7cb7c862df0a52cca1bad8990f3b"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -11,10 +11,12 @@ import (
   "path/filepath"
 
   "github.com/alexflint/go-arg"
-  "github.com/JamTools/goff/ffmpeg"
-  "github.com/JamTools/tia-audio/details"
-  "github.com/JamTools/tia-audio/utils"
+  "github.com/jamlib/libaudio/ffmpeg"
+  "github.com/jamlib/tia-audio/details"
+  "github.com/jamlib/tia-audio/utils"
 )
+
+var ffm ffmpeg.Ffmpeger
 
 // go-args: define app args
 type args struct {
@@ -70,7 +72,7 @@ func albumArtwork(imgUrl, outPath string, meta *ffmpeg.Metadata) {
   fileName := download(imgUrl, outPath)
   if len(fileName) > 0 {
     outFile := path.Join(outPath, "folder.jpg")
-    _, err := ffmpeg.OptimizeAlbumArt(path.Join(outPath, fileName), outFile)
+    _, err := ffm.OptimizeAlbumArt(path.Join(outPath, fileName), outFile)
     if err != nil {
       log.Fatal(err)
     }
@@ -114,7 +116,8 @@ func process(d *details.Details, args *args) {
     outFile:= path.Join(outPath, utils.SafeFilename(
       meta.Track + " - " + meta.Title + ".mp3"))
 
-    _, err := ffmpeg.ToMp3(inFile, args.Quality, meta, outFile)
+    c := &ffmpeg.Mp3Config{ inFile, args.Quality, outFile, meta, false }
+    _, err := ffm.ToMp3(c)
     if err != nil {
       log.Fatal(err)
     }
@@ -135,8 +138,9 @@ func main() {
     log.Fatal(err)
   }
 
-  // check ffmpeg installed
-  if _, err := ffmpeg.Which(); err != nil {
+  var err error
+  ffm, err = ffmpeg.New()
+  if err != nil {
     log.Fatal(err)
   }
 
